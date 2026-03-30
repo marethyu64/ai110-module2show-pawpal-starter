@@ -55,6 +55,8 @@ class Task:
             self.time_scheduled = info["time_scheduled"]
         if "frequency" in info:
             self.frequency = info["frequency"]
+        if "pet_id" in info:
+            self.pet_id = info["pet_id"]
     
     def mark_task_completion(self) -> None:
         """Mark the task as completed."""
@@ -244,6 +246,22 @@ class Scheduler:
         """Retrieve all tasks across all pets."""
         return self.tasks.copy()
     
+    def edit_task(self, task_id: str, info: Dict[str, Any]) -> bool:
+        """Edit an existing task by its ID.
+        
+        Args:
+            task_id: The unique ID of the task to edit
+            info: Dictionary containing the fields to update
+            
+        Returns:
+            bool: True if task was found and edited, False otherwise
+        """
+        for task in self.tasks:
+            if task.task_id == task_id:
+                task.edit_task_info(info)
+                return True
+        return False
+    
     def remove_pet_tasks(self, pet_id: str) -> None:
         """Remove all tasks associated with a pet (cascade on pet deletion)."""
         self.tasks = [task for task in self.tasks if task.pet_id != pet_id]
@@ -278,6 +296,18 @@ class Owner:
     def get_all_tasks(self) -> List[Task]:
         """Retrieve all tasks from all pets through the scheduler."""
         return self.scheduler.get_all_tasks()
+    
+    def edit_task(self, task_id: str, info: Dict[str, Any]) -> bool:
+        """Edit an existing task.
+        
+        Args:
+            task_id: The unique ID of the task to edit
+            info: Dictionary containing the fields to update (description, priority, time_scheduled, frequency, pet_id)
+            
+        Returns:
+            bool: True if task was found and edited, False otherwise
+        """
+        return self.scheduler.edit_task(task_id, info)
     
     def get_pet_by_id(self, pet_id: str) -> Optional['Pet']:
         """Find a pet by its ID."""

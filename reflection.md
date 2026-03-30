@@ -27,20 +27,14 @@ My design did change during implementation. The most important changes were addi
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
 - How did you decide which constraints mattered most?
 
+My scheduler considers the constraints for time, priority, pet association, frequency, and completion status. For time, each task has a specific scheduled datetime, where the scheduler groups them by date and time sequentially. For priority, each task has a priority level based on their number, with 1 being the highest priority. For pet association, tasks are linked to specific pets based on their pet_id attribute, so that the user can tell which pet the task is for. Frequency allows tasks to repeat once, daily, weekly, or monthly, which allows the user to have recurring tasks that don't need to constantly be set. Lastly, I considered the constraint of completion status, in which the scheduler tracks which tasks are complete or still pending, allowing the owner to tell what they have and haven't done. I decided which constraints mattered most by carefully reading over the README.md, imagining what constraints I as a pet owner would immediately expect first, and asking Copilot if I missed any constraints.
+
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
 
-One tradeoff the scheduler makes is only checking for exact time matches instead of overlapping time durations. Currently, the conflict detection algorithm groups tasks by their exact scheduled datetime and flags any time slot with multiple tasks as a conflict. This approach doesn't consider how long each task takes or whether tasks might overlap partially.
-
-This tradeoff is reasonable for this scenario because:
-1. **Simplicity**: The current system doesn't track task durations, so we can't determine overlaps
-2. **Clarity**: Exact time conflicts are unambiguous and easy for users to understand and resolve
-3. **Performance**: Checking exact matches is computationally simple (O(n) time complexity)
-4. **Progressive enhancement**: The system can be extended later to include duration-based overlap detection when task durations are added
-
-For a pet care scheduling app, this approach prioritizes preventing obviously problematic schedules (multiple tasks at the exact same time) over more complex overlap scenarios that might be acceptable depending on task types and pet needs.
+One tradeoff the scheduler makes is only checking for exact time matches instead of overlapping time durations. Currently, the conflict detection algorithm groups tasks by their exact scheduled datetime and flags any time slot with multiple tasks as a conflict. This approach doesn't consider how long each task takes or whether tasks might overlap partially. This tradeoff is reasonable for this scenario because the current system doesn't track task durations, so we can't determine overlaps. Furthermore, only checking for exact time conflicts are easy for users to understand and resolve, and checking exact matches would require more processing time. Since this is still a work in progress app, checking for overlapping times can still be implemented in the future, but it's important to lay down the vital features first.
 
 ---
 
@@ -51,33 +45,14 @@ For a pet care scheduling app, this approach prioritizes preventing obviously pr
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
 - What kinds of prompts or questions were most helpful?
 
+During this project I used VS Code Copilot to generate UML class diagrams with Mermaid.js, asked to create a plan of how it would implement the scheduling algorithm, and to help debug issues I couldn't figure out. The prompts that were most helpful was asking for inline code suggestions as well as using Copilot smart actions for generating docstring and test templates.
+
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
 - How did you evaluate or verify what the AI suggested?
 
-When I shared the `detect_conflicts()` method with Copilot and asked how it could be simplified for better readability or performance, the AI suggested a more "Pythonic" version using `collections.defaultdict` and a list comprehension:
-
-```python
-from collections import defaultdict
-
-def detect_conflicts(self) -> List[str]:
-    time_groups = defaultdict(list)
-    
-    for task in self.tasks:
-        time_groups[task.time_scheduled].append(task)
-    
-    warnings = [
-        f"⚠️  Scheduling conflict at {time_key.strftime('%m/%d %H:%M')}: "
-        f"{', '.join(f\"'{t.description}'\" for t in tasks_at_time)} are scheduled simultaneously"
-        for time_key, tasks_at_time in time_groups.items()
-        if len(tasks_at_time) > 1
-    ]
-    
-    return warnings
-```
-
-While this version is more concise and uses Python idioms effectively, I decided to keep the original implementation. The original version is more readable for developers learning Python, with explicit loops and clear variable names that make the algorithm's logic easier to follow. For an educational project like PawPal+, prioritizing code readability over conciseness is more appropriate. I verified this decision by considering the target audience (students) and the project's goals (learning system design and Python programming).
+One example of a time I didn't just accept what the AI suggested was during the conflict detection part. Copilot gave me a version using a list comprehension with defaultdict, but I decided to keep my original version with explicit loops and intermediate variables instead. I made this choice because my version is easier to read and understand, which matters more in a teaching project like this one. I verified the decision by running the test suite and manually reading the code path, then deciding that clarity and maintainability matter more than compactness for this codebase.
 
 ---
 
@@ -88,10 +63,14 @@ While this version is more concise and uses Python idioms effectively, I decided
 - What behaviors did you test?
 - Why were these tests important?
 
+I implemented 6 tests to cover the core functionality of my scheduler. These include tests for marking tasks complete, adding tasks, and sorting them in chronological order. I also tested that recurring tasks (both daily and weekly) automatically create the next occurrence when completed, and that the conflict detection system correctly catches when two tasks are scheduled at the same time. These tests were important because they helped me uncover any bugs that I didn't notice to prevent errors in the future the user might come across.
+
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
 - What edge cases would you test next if you had more time?
+
+I'm fairly confident that my scheduler works correctly, but won't be surprised to hear about a few minor bugs here and there. I made sure Copilot looked through all of my code to verify it worked cleanly, asked it to create test cases, tested most edge cases, and went through the streamlit site myself looking for bugs. If I had more time, I would add tests for duplicate tasks (the user adds the same task twice), invalid data (negative priorities, no pet IDs, etc.), and inconsistent days-in-a-month handling (Feb only has 28 days, other months have 30/31).  
 
 ---
 
@@ -101,10 +80,16 @@ While this version is more concise and uses Python idioms effectively, I decided
 
 - What part of this project are you most satisfied with?
 
+I'm most proud of learning how to modify the frontend and adding the ability to assign tasks to certain pets and add recurring tasks, since it was asked of in the assignment.
+
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
 
+If I had another iteration, I would like to redesign the Streamlit UI and add more functionality to it, since the current template is a bit empty. Although it's not asked of in the assignment, I would have liked to spend more time making my own UI so that I could fully realize the vision I had for PawPal+.
+
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+One important thing I learned about working with AI on this project is that it isn't fully reliable. It's not the driver in the car, it's the passenger on the side that can direct you. It's important that I, the driver, understand where we're going and where the directions are taking us. Furthermore, I realized that tests are an extremely reliable way to know if I can trust AI-generated code, as it gives me way more confidence that my code works rather than my AI saying it does.

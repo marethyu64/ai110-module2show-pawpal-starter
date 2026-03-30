@@ -203,3 +203,45 @@ def test_conflict_detection_identifies_simultaneous_tasks():
     assert "12:00" in conflicts[0]  # conflict_time is today (10:00) + 2 hours = 12:00
     assert "Play time" in conflicts[0]
     assert "Vet check" in conflicts[0]
+
+
+def test_task_editing_changes_task_properties():
+    owner = Owner("TestUser")
+    pet1 = Pet(name="Buddy", pet_type="Dog", breed="Golden Retriever")
+    pet2 = Pet(name="Whiskers", pet_type="Cat", breed="Siamese")
+    owner.add_pet(pet1)
+    owner.add_pet(pet2)
+
+    # Create a task
+    task = owner.create_task(
+        pet_id=pet1.pet_id,
+        description="Walk the dog",
+        time_scheduled=datetime.now() + timedelta(hours=1),
+        priority=2,
+        frequency="once"
+    )
+
+    # Edit the task
+    new_time = datetime.now() + timedelta(hours=2)
+    success = owner.edit_task(task.task_id, {
+        "description": "Walk the big dog",
+        "priority": 1,
+        "time_scheduled": new_time,
+        "frequency": "daily",
+        "pet_id": pet2.pet_id
+    })
+    
+    assert success is True
+    assert task.description == "Walk the big dog"
+    assert task.priority == 1
+    assert task.time_scheduled == new_time
+    assert task.frequency == "daily"
+    assert task.pet_id == pet2.pet_id
+
+
+def test_task_editing_nonexistent_task_returns_false():
+    owner = Owner("TestUser")
+    
+    # Try to edit a task that doesn't exist
+    success = owner.edit_task("nonexistent-id", {"description": "New description"})
+    assert success is False
