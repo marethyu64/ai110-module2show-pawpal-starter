@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from typing import List, Dict, Any, Optional
 import uuid
 
@@ -100,6 +100,141 @@ class Scheduler:
         # Sort by priority (higher priority first, i.e., lower number = higher priority)
         daily_tasks.sort(key=lambda t: t.priority)
         return daily_tasks
+    
+    def sort_by_time(self, tasks: List[Task]) -> List[Task]:
+        """Sort a list of tasks by their scheduled time in ascending order.
+        
+        Args:
+            tasks: List of Task objects to sort
+            
+        Returns:
+            List[Task]: New sorted list of tasks (original list is not modified)
+            
+        Note:
+            Uses Python's sorted() function with a lambda key function.
+            For sorting HH:MM time strings, you would use:
+            sorted(time_strings, key=lambda t: datetime.strptime(t, "%H:%M"))
+        """
+        return sorted(tasks, key=lambda t: t.time_scheduled)
+    
+    def filter_tasks(self, tasks: List[Task], completion_status: Optional[bool] = None, 
+                    pet_name: Optional[str] = None, owner: Optional['Owner'] = None) -> List[Task]:
+        """Filter tasks by completion status and/or pet name.
+        
+        Args:
+            tasks: List of Task objects to filter
+            completion_status: If provided, filter tasks by completion status
+                             (True for completed, False for pending)
+            pet_name: If provided, filter tasks for pets with this name
+            owner: Owner object required when filtering by pet_name to access pet list
+            
+        Returns:
+            List[Task]: Filtered list of tasks matching the criteria
+            
+        Example:
+            # Get all pending tasks
+            pending = scheduler.filter_tasks(all_tasks, completion_status=False)
+            
+            # Get tasks for specific pet
+            pet_tasks = scheduler.filter_tasks(all_tasks, pet_name="Fluffy", owner=owner)
+        """
+        filtered = tasks.copy()
+        
+        if completion_status is not None:
+            filtered = [t for t in filtered if t.completion == completion_status]
+        
+        if pet_name is not None and owner is not None:
+            # Find pet by name to get pet_id
+            pet = next((p for p in owner.pets if p.name == pet_name), None)
+            if pet:
+                filtered = [t for t in filtered if t.pet_id == pet.pet_id]
+        
+        return filtered
+    
+    def mark_task_complete(self, task: Task) -> None:
+        """Mark a task as completed and create next occurrence for recurring tasks.
+        
+        Args:
+            task: The Task object to mark as completed
+            
+        Behavior:
+            - Marks the task as completed and sets last_completed timestamp
+            - For daily tasks: Creates a new task instance for the next day
+            - For weekly tasks: Creates a new task instance for next week
+            - For one-time tasks: No new task is created
+            
+        Example:
+            # Complete a daily medication task
+            scheduler.mark_task_complete(daily_medication_task)
+            # This will create tomorrow's medication task automatically
+        """
+        task.mark_task_completion()
+        
+        # Handle recurring tasks
+        if task.frequency == "daily":
+            # Create next daily occurrence
+            next_occurrence = task.time_scheduled + timedelta(days=1)
+            new_task = Task(
+                description=task.description,
+                time_scheduled=next_occurrence,
+                priority=task.priority,
+                pet_id=task.pet_id,
+                frequency=task.frequency
+            )
+            self.add_task(new_task)
+        elif task.frequency == "weekly":
+            # Create next weekly occurrence
+            next_occurrence = task.time_scheduled + timedelta(days=7)
+            new_task = Task(
+                description=task.description,
+                time_scheduled=next_occurrence,
+                priority=task.priority,
+                pet_id=task.pet_id,
+                frequency=task.frequency
+            )
+            self.add_task(new_task)
+        # For "once" and "monthly" frequencies, no new task is created
+    
+    def detect_conflicts(self) -> List[str]:
+        """Detect scheduling conflicts and return warning messages.
+        
+        Returns:
+            List[str]: List of warning messages for detected conflicts
+            
+        Algorithm:
+            Lightweight strategy that checks for exact time matches between tasks.
+            Groups tasks by their scheduled datetime and identifies any time slots
+            with multiple tasks as conflicts.
+            
+        Note:
+            This method only detects exact time conflicts, not overlapping durations.
+            Tasks are considered to conflict if they have identical scheduled times.
+            
+        Example:
+            conflicts = scheduler.detect_conflicts()
+            if conflicts:
+                for warning in conflicts:
+                    print(warning)
+        """
+        warnings = []
+        # Group tasks by scheduled time
+        time_groups = {}
+        
+        for task in self.tasks:
+            time_key = task.time_scheduled
+            if time_key not in time_groups:
+                time_groups[time_key] = []
+            time_groups[time_key].append(task)
+        
+        # Check for conflicts (multiple tasks at same time)
+        for time_key, tasks_at_time in time_groups.items():
+            if len(tasks_at_time) > 1:
+                task_descriptions = [f"'{t.description}'" for t in tasks_at_time]
+                time_str = time_key.strftime("%m/%d %H:%M")
+                warning = f"⚠️  Scheduling conflict at {time_str}: {', '.join(task_descriptions)} are scheduled simultaneously"
+                warnings.append(warning)
+        
+        return warnings
     
     def get_tasks_for_pet(self, pet_id: str) -> List[Task]:
         """Retrieve all tasks associated with a specific pet."""

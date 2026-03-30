@@ -32,6 +32,16 @@ My design did change during implementation. The most important changes were addi
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
 
+One tradeoff the scheduler makes is only checking for exact time matches instead of overlapping time durations. Currently, the conflict detection algorithm groups tasks by their exact scheduled datetime and flags any time slot with multiple tasks as a conflict. This approach doesn't consider how long each task takes or whether tasks might overlap partially.
+
+This tradeoff is reasonable for this scenario because:
+1. **Simplicity**: The current system doesn't track task durations, so we can't determine overlaps
+2. **Clarity**: Exact time conflicts are unambiguous and easy for users to understand and resolve
+3. **Performance**: Checking exact matches is computationally simple (O(n) time complexity)
+4. **Progressive enhancement**: The system can be extended later to include duration-based overlap detection when task durations are added
+
+For a pet care scheduling app, this approach prioritizes preventing obviously problematic schedules (multiple tasks at the exact same time) over more complex overlap scenarios that might be acceptable depending on task types and pet needs.
+
 ---
 
 ## 3. AI Collaboration
@@ -45,6 +55,29 @@ My design did change during implementation. The most important changes were addi
 
 - Describe one moment where you did not accept an AI suggestion as-is.
 - How did you evaluate or verify what the AI suggested?
+
+When I shared the `detect_conflicts()` method with Copilot and asked how it could be simplified for better readability or performance, the AI suggested a more "Pythonic" version using `collections.defaultdict` and a list comprehension:
+
+```python
+from collections import defaultdict
+
+def detect_conflicts(self) -> List[str]:
+    time_groups = defaultdict(list)
+    
+    for task in self.tasks:
+        time_groups[task.time_scheduled].append(task)
+    
+    warnings = [
+        f"⚠️  Scheduling conflict at {time_key.strftime('%m/%d %H:%M')}: "
+        f"{', '.join(f\"'{t.description}'\" for t in tasks_at_time)} are scheduled simultaneously"
+        for time_key, tasks_at_time in time_groups.items()
+        if len(tasks_at_time) > 1
+    ]
+    
+    return warnings
+```
+
+While this version is more concise and uses Python idioms effectively, I decided to keep the original implementation. The original version is more readable for developers learning Python, with explicit loops and clear variable names that make the algorithm's logic easier to follow. For an educational project like PawPal+, prioritizing code readability over conciseness is more appropriate. I verified this decision by considering the target audience (students) and the project's goals (learning system design and Python programming).
 
 ---
 
