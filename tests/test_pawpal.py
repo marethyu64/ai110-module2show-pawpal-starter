@@ -47,6 +47,56 @@ def test_task_addition_increases_pet_task_count():
     assert len(tasks_after) == 2
 
 
+def test_sort_by_time_returns_chronological_order():
+    owner = Owner("TestUser")
+    pet = Pet(name="Max", pet_type="Dog", breed="Labrador")
+    owner.add_pet(pet)
+
+    base_time = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
+    
+    # Create tasks out of chronological order
+    task3 = owner.create_task(
+        pet_id=pet.pet_id,
+        description="Evening walk",
+        time_scheduled=base_time + timedelta(hours=6),  # 3:00 PM
+        priority=1,
+    )
+    
+    task1 = owner.create_task(
+        pet_id=pet.pet_id,
+        description="Morning walk",
+        time_scheduled=base_time + timedelta(hours=1),  # 10:00 AM
+        priority=2,
+    )
+    
+    task2 = owner.create_task(
+        pet_id=pet.pet_id,
+        description="Lunch feeding",
+        time_scheduled=base_time + timedelta(hours=4),  # 1:00 PM
+        priority=1,
+    )
+
+    # Get all tasks (they should be in creation order, not time order)
+    all_tasks = owner.scheduler.get_all_tasks()
+    
+    # Sort by time
+    sorted_tasks = owner.scheduler.sort_by_time(all_tasks)
+    
+    # Verify chronological order
+    assert len(sorted_tasks) == 3
+    assert sorted_tasks[0].description == "Morning walk"  # 10:00 AM
+    assert sorted_tasks[1].description == "Lunch feeding"  # 1:00 PM
+    assert sorted_tasks[2].description == "Evening walk"  # 3:00 PM
+    
+    # Verify the original list is not modified
+    assert all_tasks[0].description == "Evening walk"  # Still in creation order
+    
+    # Verify exact times
+    assert sorted_tasks[0].time_scheduled == base_time + timedelta(hours=1)
+    assert sorted_tasks[1].time_scheduled == base_time + timedelta(hours=4)
+    assert sorted_tasks[2].time_scheduled == base_time + timedelta(hours=6)
+
+
 def test_recurring_daily_task_creates_next_occurrence():
     owner = Owner("TestUser")
     pet = Pet(name="Buddy", pet_type="Dog", breed="Golden Retriever")
