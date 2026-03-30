@@ -7,6 +7,10 @@
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
 
+Three core actions a user should be able to perform is creating a schedule, add tasks, and add pets.
+
+In my initial UML design, I'll have classes for Owner, Pet, Task, and Scheduler. The Owner class will have attributes such as name, owner preferences, and a list of pets from the Pet class. The methods the Owner class will have is adding pets, editing name, and editing preferences. The Pet class will have attributes such as pet type, breed, name, and logs (last walked, last groomed, etc.). Its methods consist of updating the logs, updating pet info, and deleting the pet. The Task class will have attributes time scheduled, task priority, and completion. Its methods consist of editing task info, marking task completion, and deleting itself. The Scheduler class will have the attributes of time available and a list of tasks from the Task class. Its methods will be adding tasks, adding a schedule, and generating a daily list of tasks.
+
 **b. Design changes**
 
 - Did your design change during implementation?
