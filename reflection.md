@@ -2,12 +2,12 @@
 
 ## 1. System Design
 
+Three core actions a user should be able to perform is creating a schedule, add tasks, and add pets.
+
 **a. Initial design**
 
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
-
-Three core actions a user should be able to perform is creating a schedule, add tasks, and add pets.
 
 In my initial UML design, I'll have classes for Owner, Pet, Task, and Scheduler. The Owner class will have attributes such as name, owner preferences, and a list of pets from the Pet class. The methods the Owner class will have is adding pets, editing name, and editing preferences. The Pet class will have attributes such as pet type, breed, name, and logs (last walked, last groomed, etc.). Its methods consist of updating the logs, updating pet info, and deleting the pet. The Task class will have attributes time scheduled, task priority, and completion. Its methods consist of editing task info, marking task completion, and deleting itself. The Scheduler class will have the attributes of time available and a list of tasks from the Task class. Its methods will be adding tasks, adding a schedule, and generating a daily list of tasks.
 
@@ -15,6 +15,8 @@ In my initial UML design, I'll have classes for Owner, Pet, Task, and Scheduler.
 
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
+
+My design did change during implementation. The most important changes were adding a connection between Pet and Task as well as adding a connection between Owner and Scheduler. When I first brainstormed, I didn't take into account how some tasks were for specific pets only, which is why the AI suggested I add a pet_id attribute for each task. That way, the owner will know what pet the task is referring to. In addition, the Scheduler class now has the Owner class as one of its attributes so that it can access the owner preferences and pets.
 
 ---
 
